@@ -246,7 +246,8 @@ class StyleTokenLayer(nn.Module):
 
             # Apply mask if provided
             if mask is not None:
-                attn = attn.masked_fill(~mask.unsqueeze(-1), float('-inf'))
+                mask_bool = mask.bool() if mask.dtype != torch.bool else mask
+                attn = attn.masked_fill(~mask_bool.unsqueeze(-1), float('-inf'))
 
             # Softmax over sequence length
             attn = F.softmax(attn, dim=1)  # [batch, seq_len, n_style]

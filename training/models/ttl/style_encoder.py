@@ -80,8 +80,7 @@ class StyleEncoder(nn.Module):
 
         # 2. ConvNeXt処理
         self.convnext = ConvNeXtStack(
-            in_channels=convnext_idim,
-            out_channels=convnext_idim,
+            idim=convnext_idim,
             ksz=convnext_ksz,
             intermediate_dim=convnext_intermediate_dim,
             num_layers=convnext_num_layers,
@@ -128,15 +127,12 @@ class StyleEncoder(nn.Module):
             x = x * mask
 
         # 3. Style Token Layer
-        # [batch, proj_in_odim, seq_len] -> [batch, seq_len, proj_in_odim]
-        x = x.transpose(1, 2)
-
         # Attention mask (batch_size次元を削除したマスク)
         attn_mask = None
         if mask is not None:
             attn_mask = mask.squeeze(1)  # [batch, seq_len]
 
-        # [batch, seq_len, proj_in_odim] -> [batch, style_value_dim]
+        # [batch, proj_in_odim, seq_len] -> [batch, style_value_dim]
         style_emb = self.style_token_layer(x, mask=attn_mask)
 
         return style_emb

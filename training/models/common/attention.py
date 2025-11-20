@@ -65,9 +65,8 @@ class LARoPE(nn.Module):
         freqs = torch.outer(t, self.inv_freq)  # [seq_len, dim//2]
 
         # cos, sin を計算
-        emb = torch.cat([freqs, freqs], dim=-1)  # [seq_len, dim]
-        cos = emb.cos()
-        sin = emb.sin()
+        cos = freqs.cos()  # [seq_len, dim//2]
+        sin = freqs.sin()  # [seq_len, dim//2]
 
         return cos, sin
 
@@ -279,6 +278,7 @@ class TransformerEncoderLayer(nn.Module):
         # Attention
         if attn_mask is not None:
             attn_mask = attn_mask.squeeze(1).squeeze(1)  # [batch, seq_len]
+            attn_mask = attn_mask.bool()  # Convert to bool
             attn_mask = ~attn_mask  # PyTorchは True=mask なので反転
 
         attn_output, _ = self.self_attn(x, x, x, key_padding_mask=attn_mask)

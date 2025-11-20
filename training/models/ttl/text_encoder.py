@@ -143,8 +143,7 @@ class TextEncoder(nn.Module):
 
         # 2. ConvNeXt前処理
         self.convnext = ConvNeXtStack(
-            in_channels=convnext_idim,
-            out_channels=convnext_idim,
+            idim=convnext_idim,
             ksz=convnext_ksz,
             intermediate_dim=convnext_intermediate_dim,
             num_layers=convnext_num_layers,

@@ -139,8 +139,7 @@ class MainBlock(nn.Module):
 
         # ConvNeXt Block 0
         self.convnext_0 = ConvNeXtStack(
-            in_channels=idim,
-            out_channels=idim,
+            idim=idim,
             ksz=ksz,
             intermediate_dim=intermediate_dim,
             num_layers=convnext_0_num_layers,
@@ -149,8 +148,7 @@ class MainBlock(nn.Module):
 
         # ConvNeXt Block 1
         self.convnext_1 = ConvNeXtStack(
-            in_channels=idim,
-            out_channels=idim,
+            idim=idim,
             ksz=ksz,
             intermediate_dim=intermediate_dim,
             num_layers=convnext_1_num_layers,
@@ -159,8 +157,7 @@ class MainBlock(nn.Module):
 
         # ConvNeXt Block 2
         self.convnext_2 = ConvNeXtStack(
-            in_channels=idim,
-            out_channels=idim,
+            idim=idim,
             ksz=ksz,
             intermediate_dim=intermediate_dim,
             num_layers=convnext_2_num_layers,
@@ -318,8 +315,7 @@ class VectorField(nn.Module):
 
         # 4. Last ConvNeXt
         self.last_convnext = ConvNeXtStack(
-            in_channels=idim,
-            out_channels=idim,
+            idim=idim,
             ksz=ksz,
             intermediate_dim=intermediate_dim,
             num_layers=last_convnext_num_layers,
