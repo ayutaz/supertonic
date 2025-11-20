@@ -168,7 +168,7 @@ class TTSDataset(Dataset):
 
         # Process text
         text = item["text"]
-        text_indices = self.unicode_processor.text_to_sequence(text)
+        text_indices = self.unicode_processor.text_to_ids(text)
         text_tensor = torch.LongTensor(text_indices)
 
         return {

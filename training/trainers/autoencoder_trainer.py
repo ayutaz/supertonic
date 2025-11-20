@@ -15,8 +15,8 @@ from typing import Dict, Optional
 import wandb
 from tqdm import tqdm
 
-from ..models.autoencoder import SpeechAutoencoder, MultiScaleDiscriminator
-from ..losses import (
+from models.autoencoder import SpeechAutoencoder, MultiScaleDiscriminator
+from losses import (
     MultiScaleSTFTLoss,
     MelSpectrogramLoss,
     FeatureMatchingLoss,

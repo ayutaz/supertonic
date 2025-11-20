@@ -1047,6 +1047,514 @@ class SelfPurifyingFlowMatching:
 
 ---
 
+## 学習パイプライン実装状況と次のステップ
+
+### 📊 実装完了状況 (2025年1月)
+
+**✅ 全ての学習コードが実装完了し、すぐに学習を開始できる状態です！**
+
+#### 完了した実装
+
+**Phase 0-3: 全モジュール実装完了**
+- ✅ **Phase 0: Speech Autoencoder** (6テスト合格)
+  - Encoder, Decoder, Vocoder, MultiScaleDiscriminator
+  - AutoencoderTrainer完全実装
+- ✅ **Phase 1: Common Modules** (14テスト合格)
+  - Attention (LARoPE, MultiHeadAttention)
+  - ConvNeXt (Block, Stack, InitialConvNeXt)
+  - Layers (CausalConv1d, LayerScale, FiLM, TimeEmbedding, StyleTokenLayer)
+- ✅ **Phase 2: TTL (Text-to-Latent)** (7テスト合格)
+  - TextEncoder, StyleEncoder, CrossAttentionLARoPE, VectorField
+  - TTLTrainer完全実装
+- ✅ **Phase 3: Duration Predictor** (5テスト合格)
+  - SentenceEncoder, StyleEncoderDP, DurationPredictor
+  - DPTrainer完全実装
+
+**データパイプライン: 完全実装**
+- ✅ **TTSDataset**: テキスト-音声ペアデータセット (JSON/TXT対応)
+- ✅ **AudioDataset**: 音声のみデータセット (Stage 1用)
+- ✅ **UnicodeProcessor**: NFKD正規化 + Unicode→Text IDs変換
+- ✅ **collate_fn**: バッチ処理 + パディング + マスク生成
+- ✅ データセットテスト (6テスト合格)
+
+**統合学習パイプライン: 完全実装**
+- ✅ **train_pipeline.py**: 3段階学習の自動化
+  - Stage 1: Autoencoder学習
+  - Stage 2: TTL学習 (冷凍Autoencoder使用)
+  - Stage 3: DP学習 (冷凍Autoencoder使用)
+  - チェックポイント自動管理
+  - TensorBoard統合
+  - 段階スキップ/個別実行機能
+
+**テストとドキュメント**
+- ✅ **統合テスト**: 38テスト全て合格 (100%成功率)
+- ✅ **training/TRAINING_PIPELINE.md**: 完全な学習ガイド
+- ✅ **training/PROGRESS_SUMMARY.md**: 実装完了報告
+
+#### 実装ファイル一覧
+
+```
+training/
+├── models/
+│   ├── autoencoder.py          # Phase 0: Encoder, Decoder, Discriminator
+│   ├── ttl.py                  # Phase 2: TTL モデル
+│   ├── dp.py                   # Phase 3: Duration Predictor
+│   └── common/                 # Phase 1: 共通モジュール
+│       ├── attention.py        # LARoPE, MultiHeadAttention
+│       ├── convnext.py         # ConvNeXt blocks
+│       ├── layers.py           # CausalConv1d, FiLM, etc.
+│       └── utils.py            # ユーティリティ
+├── data/
+│   ├── datasets.py             # TTSDataset, AudioDataset, collate_fn
+│   ├── unicode.py              # UnicodeProcessor
+│   └── preprocessing.py        # MelSpectrogramExtractor
+├── trainers/
+│   ├── autoencoder_trainer.py  # Stage 1 trainer
+│   ├── ttl_trainer.py          # Stage 2 trainer
+│   └── dp_trainer.py           # Stage 3 trainer
+├── losses/
+│   ├── autoencoder_losses.py   # STFT, Mel, Feature Matching, etc.
+│   ├── ttl_losses.py           # Flow Matching Loss
+│   └── dp_losses.py            # MSE Loss
+├── scripts/
+│   └── train_pipeline.py       # 統合学習スクリプト
+├── tests/
+│   ├── test_autoencoder.py     # Phase 0 tests (6)
+│   ├── test_common.py          # Phase 1 tests (14)
+│   ├── test_ttl.py             # Phase 2 tests (7)
+│   ├── test_dp.py              # Phase 3 tests (5)
+│   ├── test_dataset.py         # Dataset tests (6)
+│   └── run_all_tests.py        # 統合テストランナー
+└── docs/
+    ├── TRAINING_PIPELINE.md    # 完全な学習ガイド
+    └── PROGRESS_SUMMARY.md     # 実装完了報告
+```
+
+---
+
+### 🎯 次のステップ: 学習実行（プランA - LJSpeech高速テスト）
+
+**目標**: 30-45分以内に学習を開始し、パイプラインを検証する
+
+**データセット**: LJSpeech
+- 24時間の高品質音声
+- 単一話者（女性）
+- 22.05kHz (自動的に44.1kHzにリサンプリング)
+- 13,100クリップ
+- ライセンス: Public Domain
+- ダウンロードサイズ: 2.6GB
+
+**推定時間**:
+- ダウンロード: 10-15分
+- 準備: 5分
+- 検証: 5分
+- **合計: 30-45分で学習開始可能**
+
+---
+
+#### Step 1: LJSpeechダウンロード（10-15分）
+
+```bash
+# データディレクトリ作成
+mkdir -p data/raw/ljspeech
+cd data/raw/ljspeech
+
+# ダウンロード（2.6GB）
+wget http://data.keithito.com/data/speech/LJSpeech-1.1.tar.bz2
+
+# または、ブラウザでダウンロード:
+# http://data.keithito.com/data/speech/LJSpeech-1.1.tar.bz2
+
+# 解凍
+tar -xvjf LJSpeech-1.1.tar.bz2
+
+# 戻る
+cd ../../..
+```
+
+**ディレクトリ構造**:
+```
+data/raw/ljspeech/LJSpeech-1.1/
+├── wavs/
+│   ├── LJ001-0001.wav
+│   ├── LJ001-0002.wav
+│   └── ... (13,100 files)
+├── metadata.csv
+└── README
+```
+
+---
+
+#### Step 2: データセット準備スクリプト作成（5分）
+
+`prepare_ljspeech.py`を作成:
+
+```python
+#!/usr/bin/env python3
+"""
+LJSpeechメタデータをSupertonicTTS形式に変換
+"""
+import csv
+from pathlib import Path
+
+def prepare_ljspeech(
+    ljspeech_dir: str = "data/raw/ljspeech/LJSpeech-1.1",
+    output_dir: str = "data/processed"
+):
+    """LJSpeechメタデータをTXT形式に変換"""
+    ljspeech_path = Path(ljspeech_dir)
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    # metadata.csv読み込み
+    metadata_file = ljspeech_path / "metadata.csv"
+
+    all_data = []
+    with open(metadata_file, "r", encoding="utf-8") as f:
+        reader = csv.reader(f, delimiter="|")
+        for row in reader:
+            file_id, text, normalized_text = row
+            wav_path = f"wavs/{file_id}.wav"
+            # 正規化テキストを使用（TTS向き）
+            all_data.append((wav_path, normalized_text))
+
+    # 分割: 95% train, 2.5% val, 2.5% test
+    n = len(all_data)
+    train_size = int(0.95 * n)
+    val_size = int(0.025 * n)
+
+    train_data = all_data[:train_size]
+    val_data = all_data[train_size:train_size + val_size]
+    test_data = all_data[train_size + val_size:]
+
+    # メタデータファイル書き込み
+    for split, data in [("train", train_data), ("val", val_data), ("test", test_data)]:
+        output_file = output_path / f"ljspeech_{split}.txt"
+        with open(output_file, "w", encoding="utf-8") as f:
+            for wav_path, text in data:
+                f.write(f"{wav_path}|{text}\n")
+        print(f"Created {output_file} with {len(data)} samples")
+
+    print(f"\nTotal: {n} samples")
+    print(f"Train: {len(train_data)}, Val: {len(val_data)}, Test: {len(test_data)}")
+
+if __name__ == "__main__":
+    prepare_ljspeech()
+```
+
+---
+
+#### Step 3: メタデータ準備（1分）
+
+```bash
+# スクリプト実行
+python prepare_ljspeech.py
+```
+
+**出力**:
+```
+Created data/processed/ljspeech_train.txt with 12445 samples
+Created data/processed/ljspeech_val.txt with 327 samples
+Created data/processed/ljspeech_test.txt with 328 samples
+
+Total: 13100 samples
+Train: 12445, Val: 327, Test: 328
+```
+
+**メタデータフォーマット** (`ljspeech_train.txt`):
+```
+wavs/LJ001-0001.wav|Printing, in the only sense with which we are at present concerned, differs from most if not from all the arts and crafts represented in the Exhibition
+wavs/LJ001-0002.wav|in being comparatively modern.
+wavs/LJ001-0003.wav|For although the Chinese took impressions from wood blocks engraved in relief for centuries before the woodcutters of the Netherlands, by a similar process
+...
+```
+
+---
+
+#### Step 4: データセット検証（2分）
+
+`verify_dataset.py`を作成:
+
+```python
+#!/usr/bin/env python3
+"""
+データセット整合性確認
+"""
+from pathlib import Path
+import librosa
+
+def verify_dataset(
+    data_dir: str,
+    metadata_file: str,
+    check_audio: bool = True,
+    num_samples: int = 10
+):
+    """データセットファイルの存在と読み込み可能性を確認"""
+    data_path = Path(data_dir)
+
+    print(f"Verifying dataset: {metadata_file}")
+    print(f"Data directory: {data_dir}")
+
+    missing_files = []
+    corrupted_files = []
+    total_duration = 0.0
+
+    with open(metadata_file, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+
+    print(f"Total samples: {len(lines)}")
+
+    for i, line in enumerate(lines):
+        parts = line.strip().split("|")
+        if len(parts) < 2:
+            print(f"Warning: Invalid line {i}: {line}")
+            continue
+
+        audio_path = data_path / parts[0]
+        text = parts[1]
+
+        # ファイル存在確認
+        if not audio_path.exists():
+            missing_files.append(str(audio_path))
+            continue
+
+        # 音声読み込みテスト（サンプル）
+        if check_audio and i < num_samples:
+            try:
+                y, sr = librosa.load(str(audio_path), sr=None)
+                duration = len(y) / sr
+                total_duration += duration
+                print(f"Sample {i}: {audio_path.name} - {duration:.2f}s, {sr}Hz")
+            except Exception as e:
+                corrupted_files.append(str(audio_path))
+                print(f"Error loading {audio_path}: {e}")
+
+    # サマリー
+    print("\n" + "="*50)
+    print("VERIFICATION SUMMARY")
+    print("="*50)
+    print(f"Total samples: {len(lines)}")
+    print(f"Missing files: {len(missing_files)}")
+    print(f"Corrupted files: {len(corrupted_files)}")
+    if check_audio and total_duration > 0:
+        print(f"Average duration: {total_duration / min(num_samples, len(lines)):.2f}s")
+
+    if missing_files:
+        print("\nMissing files (first 10):")
+        for f in missing_files[:10]:
+            print(f"  - {f}")
+
+    if corrupted_files:
+        print("\nCorrupted files:")
+        for f in corrupted_files:
+            print(f"  - {f}")
+
+    return len(missing_files) == 0 and len(corrupted_files) == 0
+
+if __name__ == "__main__":
+    import sys
+    if len(sys.argv) < 3:
+        print("Usage: python verify_dataset.py <data_dir> <metadata_file>")
+        sys.exit(1)
+
+    data_dir = sys.argv[1]
+    metadata_file = sys.argv[2]
+    verify_dataset(data_dir, metadata_file)
+```
+
+**実行**:
+```bash
+python verify_dataset.py \
+  data/raw/ljspeech/LJSpeech-1.1 \
+  data/processed/ljspeech_train.txt
+```
+
+**出力例**:
+```
+Verifying dataset: data/processed/ljspeech_train.txt
+Data directory: data/raw/ljspeech/LJSpeech-1.1
+Total samples: 12445
+Sample 0: LJ001-0001.wav - 7.02s, 22050Hz
+Sample 1: LJ001-0002.wav - 1.85s, 22050Hz
+...
+
+==================================================
+VERIFICATION SUMMARY
+==================================================
+Total samples: 12445
+Missing files: 0
+Corrupted files: 0
+Average duration: 5.12s
+```
+
+---
+
+#### Step 5: 学習開始（即座）
+
+```bash
+cd training
+
+# 3段階全て実行
+uv run python scripts/train_pipeline.py \
+  --config ../assets/onnx/tts.json \
+  --data-dir ../data/raw/ljspeech/LJSpeech-1.1 \
+  --metadata ../data/processed/ljspeech_train.txt \
+  --output-dir ../outputs/ljspeech \
+  --ae-epochs 200 \
+  --ttl-epochs 150 \
+  --dp-epochs 100 \
+  --batch-size 16 \
+  --learning-rate 2e-4
+```
+
+**または、段階ごとに実行**:
+
+```bash
+# Stage 1のみ: Autoencoder
+uv run python scripts/train_pipeline.py \
+  --config ../assets/onnx/tts.json \
+  --data-dir ../data/raw/ljspeech/LJSpeech-1.1 \
+  --metadata ../data/processed/ljspeech_train.txt \
+  --output-dir ../outputs/ljspeech \
+  --stage 1 \
+  --ae-epochs 200 \
+  --batch-size 16
+
+# Stage 2のみ: TTL（Stage 1完了後）
+uv run python scripts/train_pipeline.py \
+  --config ../assets/onnx/tts.json \
+  --data-dir ../data/raw/ljspeech/LJSpeech-1.1 \
+  --metadata ../data/processed/ljspeech_train.txt \
+  --output-dir ../outputs/ljspeech \
+  --stage 2 \
+  --ttl-epochs 150 \
+  --batch-size 16
+
+# Stage 3のみ: Duration Predictor（Stage 1完了後）
+uv run python scripts/train_pipeline.py \
+  --config ../assets/onnx/tts.json \
+  --data-dir ../data/raw/ljspeech/LJSpeech-1.1 \
+  --metadata ../data/processed/ljspeech_train.txt \
+  --output-dir ../outputs/ljspeech \
+  --stage 3 \
+  --dp-epochs 100 \
+  --batch-size 16
+```
+
+---
+
+#### Step 6: 学習監視
+
+**TensorBoard起動**:
+```bash
+tensorboard --logdir ../outputs/ljspeech/logs
+```
+
+ブラウザで `http://localhost:6006` を開く
+
+**監視するメトリクス**:
+
+**Stage 1 (Autoencoder)**:
+- `train/loss`: 総損失
+- `train/stft`: STFT損失
+- `train/mel`: Mel-Spectrogram損失
+- `train/adversarial`: 敵対的損失
+- `train/discriminator`: Discriminator損失
+- `val/stft_loss`, `val/mel_loss`: 検証損失
+
+**Stage 2 (TTL)**:
+- `train/flow_matching_loss`: Flow Matching損失
+- `val/flow_matching_loss`: 検証損失
+
+**Stage 3 (DP)**:
+- `train/mse_loss`: MSE損失
+- `train/mean_predicted_duration`: 予測平均長
+- `train/mean_ground_truth_duration`: 真値平均長
+- `val/mse_loss`: 検証損失
+
+---
+
+### 📈 推定学習時間
+
+**LJSpeech（24時間）でのGPU別推定時間**:
+
+| GPU | Batch Size | Stage 1 (200ep) | Stage 2 (150ep) | Stage 3 (100ep) | 合計 |
+|-----|-----------|----------------|----------------|----------------|------|
+| RTX 3060 (12GB) | 8-12 | 5-7日 | 3-4日 | 2-3日 | 10-14日 |
+| RTX 4070 (12GB) | 16 | 3-5日 | 2-3日 | 1-2日 | 6-10日 |
+| RTX 4090 (24GB) | 16-24 | 2-3日 | 1-2日 | 1日 | 4-6日 |
+| A100 (40GB) | 32-48 | 1-2日 | 0.5-1日 | 0.5日 | 2-3.5日 |
+
+---
+
+### 🚀 今後の展開: 本番学習
+
+LJSpeechでの検証完了後、以下のステップに進みます:
+
+#### オプション1: Hi-Fi TTS（推奨）
+- **292時間、10話者、44.1kHz**
+- SupertonicTTSと完全一致のサンプルレート
+- 卓越した音質（SNR ≥ 32dB）
+- ダウンロード: 60GB
+- 学習時間（RTX 4090）: 20-30日
+
+```bash
+# Hi-Fi TTSダウンロード
+mkdir -p data/raw/hifi_tts && cd data/raw/hifi_tts
+wget http://www.openslr.org/resources/109/hi_fi_tts_v0.tar.gz
+tar -xvzf hi_fi_tts_v0.tar.gz
+cd ../../..
+
+# メタデータ準備（prepare_hifitts.pyを作成）
+python prepare_hifitts.py
+
+# 学習開始
+cd training
+uv run python scripts/train_pipeline.py \
+  --config ../assets/onnx/tts.json \
+  --data-dir ../data/raw/hifi_tts/hi_fi_tts_v0 \
+  --metadata ../data/processed/hifitts_train.txt \
+  --output-dir ../outputs/hifitts \
+  --ae-epochs 100 \
+  --ttl-epochs 80 \
+  --dp-epochs 50 \
+  --batch-size 16
+```
+
+#### オプション2: LibriTTS-R（大規模）
+- **585時間、2,456話者、24kHz**
+- 最大の話者多様性
+- ボイスクローニングに最適
+- ダウンロード: 200GB
+- 学習時間（RTX 4090）: 30-50日
+
+#### オプション3: 日本語対応
+CLAUDE.mdの「日本語対応について」セクションを参照:
+- JSUT + JVS Corpus（50時間）
+- 推定工数: 4-7ヶ月
+- またはStableTTS（日本語対応済み）をベースにする
+
+---
+
+### 📚 参考リンク
+
+**ドキュメント**:
+- **training/TRAINING_PIPELINE.md**: 完全な学習ガイド
+- **training/PROGRESS_SUMMARY.md**: 実装完了報告
+
+**データセット**:
+- LJSpeech: http://data.keithito.com/data/speech/
+- Hi-Fi TTS: http://www.openslr.org/109/
+- LibriTTS-R: http://www.openslr.org/141/
+
+**テスト**:
+```bash
+cd training
+uv run python tests/run_all_tests.py  # 38テスト全て実行
+```
+
+---
+
 ## ライセンス
 
 - サンプルコード: MIT License

@@ -16,7 +16,10 @@
       "Bash(git commit:*)",
       "Bash(find:*)",
       "Bash(cat:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(python tests/test_autoencoder.py:*)",
+      "Bash(uv run python:*)",
+      "Bash(echo:*)"
     ],
     "deny": [],
     "ask": []

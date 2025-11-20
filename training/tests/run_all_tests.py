@@ -1,7 +1,7 @@
 """
 統合テストスクリプト
 
-Phase 1〜3の全テストを実行して結果をサマリー表示
+Phase 0〜3 + Datasetの全テストを実行して結果をサマリー表示
 """
 
 import sys
@@ -58,14 +58,16 @@ def main():
     """
     print("=" * 60)
     print("SupertonicTTS Training - Integrated Test Suite")
-    print("Phase 1-3 Full Test Execution")
+    print("Phase 0-3 + Dataset Full Test Execution")
     print("=" * 60)
 
     # Test configurations
     tests = [
+        ("Phase 0: Speech Autoencoder", "tests/test_autoencoder.py"),
         ("Phase 1: Common Modules", "tests/test_common.py"),
         ("Phase 2: TTL (Text-to-Latent)", "tests/test_ttl.py"),
         ("Phase 3: Duration Predictor", "tests/test_dp.py"),
+        ("Dataset: TTSDataset & AudioDataset", "tests/test_dataset.py"),
     ]
 
     # Run all tests
