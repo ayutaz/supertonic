@@ -13,6 +13,9 @@ from .ttl_losses import (
     FlowMatchingLoss,
     TTLLoss,
 )
+from .dp_losses import (
+    DPLoss,
+)
 
 __all__ = [
     # Autoencoder Losses
@@ -24,4 +27,6 @@ __all__ = [
     # TTL Losses
     "FlowMatchingLoss",
     "TTLLoss",
+    # DP Losses
+    "DPLoss",
 ]
