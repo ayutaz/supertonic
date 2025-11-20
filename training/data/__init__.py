@@ -4,7 +4,7 @@ Data processing modules
 
 from .datasets import TTSDataset, AudioDataset
 from .preprocessing import AudioPreprocessor, MelSpectrogramExtractor
-from .unicode_processor import UnicodeProcessor
+from .unicode import UnicodeProcessor, UnicodeIndexer, length_to_mask
 
 __all__ = [
     # Datasets
@@ -15,4 +15,6 @@ __all__ = [
     "MelSpectrogramExtractor",
     # Unicode
     "UnicodeProcessor",
+    "UnicodeIndexer",
+    "length_to_mask",
 ]
