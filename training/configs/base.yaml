@@ -1,0 +1,82 @@
+# SupertonicTTS - 基本設定ファイル
+
+# プロジェクト設定
+project:
+  name: "supertonic-training"
+  version: "v1.5.0"
+  language: "ja"  # 日本語学習
+
+# データ設定
+data:
+  # データセット
+  datasets:
+    - name: "jsut"
+      path: "data/raw/jsut"
+      duration_hours: 10
+    - name: "jvs"
+      path: "data/raw/jvs"
+      duration_hours: 30
+
+  # データローダー設定
+  batch_size: 64
+  num_workers: 8
+  pin_memory: true
+  prefetch_factor: 2
+
+  # 前処理
+  sample_rate: 44100
+  hop_length: 512
+  chunk_size: 512  # base_chunk_size
+
+  # Unicode処理
+  unicode_indexer_path: "resources/unicode_indexer.npy"
+  char_dict_path: "resources/metadata/char_dict/ja/char_dict.json"
+
+# 学習設定
+training:
+  # デバイス
+  device: "cuda"
+  use_amp: true  # Automatic Mixed Precision
+  gradient_clip: 1.0
+
+  # チェックポイント
+  checkpoint_dir: "checkpoints"
+  save_every_n_steps: 5000
+  keep_last_n_checkpoints: 5
+
+  # ロギング
+  log_dir: "logs"
+  wandb:
+    enabled: true
+    project: "supertonic-training"
+    entity: null  # your wandb username
+  tensorboard:
+    enabled: true
+  log_every_n_steps: 100
+
+  # 検証
+  val_every_n_steps: 1000
+  val_batch_size: 8
+
+  # 最適化
+  seed: 42
+  deterministic: false  # Trueにすると再現性向上だが速度低下
+
+# 評価設定
+evaluation:
+  metrics:
+    - "mel_spectrogram_error"
+    - "duration_error"
+    - "character_error_rate"
+  save_samples: true
+  num_samples: 5
+
+# エクスポート設定
+export:
+  onnx:
+    opset_version: 17
+    dynamic_axes: true
+    optimize: true
+  quantization:
+    enabled: false
+    mode: "dynamic"  # or "static"

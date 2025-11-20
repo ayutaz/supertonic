@@ -1,0 +1,127 @@
+# SupertonicTTS - Duration Predictor (DP) 設定
+# 論文・tts.jsonから抽出した正確なハイパーパラメータ
+
+# 基本設定を継承
+defaults:
+  - base
+
+# モデル設定
+model:
+  name: "duration_predictor"
+
+  # 基本パラメータ
+  latent_dim: 24
+  chunk_compress_factor: 6
+
+  # Normalizer
+  normalizer:
+    scale: 1.0
+
+  # Sentence Encoder
+  sentence_encoder:
+    char_emb_dim: 64
+    char_dict_path: "resources/metadata/char_dict/ja/char_dict.json"
+
+    # Text Embedder
+    text_embedder:
+      char_dict_path: "resources/metadata/char_dict/ja/char_dict.json"
+      char_emb_dim: 64
+
+    # ConvNeXt
+    convnext:
+      idim: 64
+      ksz: 5
+      intermediate_dim: 256
+      num_layers: 6
+      dilation_lst: [1, 1, 1, 1, 1, 1]
+
+    # Attention Encoder
+    attn_encoder:
+      hidden_channels: 64
+      filter_channels: 256
+      n_heads: 2
+      n_layers: 2
+      p_dropout: 0.0
+
+    # Projection Out
+    proj_out:
+      idim: 64
+      odim: 64
+
+  # Style Encoder
+  style_encoder:
+    # Projection In
+    proj_in:
+      ldim: 24
+      chunk_compress_factor: 6
+      odim: 64
+
+    # ConvNeXt
+    convnext:
+      idim: 64
+      ksz: 5
+      intermediate_dim: 256
+      num_layers: 4
+      dilation_lst: [1, 1, 1, 1]
+
+    # Style Token Layer
+    style_token_layer:
+      input_dim: 64
+      n_style: 8  # 少数のスタイルトークン
+      style_key_dim: 0  # キーなし（シンプルな設計）
+      style_value_dim: 16
+      prototype_dim: 64
+      n_units: 64
+      n_heads: 2
+
+  # Predictor (Duration Regression)
+  predictor:
+    sentence_dim: 64
+    n_style: 8
+    style_dim: 16
+    hdim: 128
+    n_layer: 2
+
+# 損失関数設定
+loss:
+  # Duration Loss (MSE)
+  duration_loss_weight: 1.0
+
+  # L1 Loss (補助的)
+  l1_loss_weight: 0.5
+
+# 学習設定
+training:
+  # 最適化
+  optimizer:
+    type: "AdamW"
+    lr: 5.0e-4
+    betas: [0.9, 0.999]
+    eps: 1.0e-8
+    weight_decay: 0.01
+
+  # スケジューラー
+  scheduler:
+    type: "ReduceLROnPlateau"
+    mode: "min"
+    factor: 0.5
+    patience: 10000
+    min_lr: 1.0e-6
+
+  # 学習ステップ
+  total_steps: 3000  # 3k steps (非常に少ない)
+  warmup_steps: 500
+
+  # バッチサイズ
+  batch_size: 128  # より大きなバッチサイズ
+  gradient_accumulation_steps: 1
+
+  # EMA
+  use_ema: false  # 短い学習なのでEMAは不要
+
+# データ設定
+data:
+  # Duration Predictorは全データセットを使用
+  # (AE, TTLで学習したモデルから抽出した時間長を使用)
+  use_preprocessed_durations: true
+  preprocessed_duration_path: "data/processed/durations"

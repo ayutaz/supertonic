@@ -1,0 +1,217 @@
+# SupertonicTTS - Text-to-Latent (TTL) 設定
+# 論文・tts.jsonから抽出した正確なハイパーパラメータ
+
+# 基本設定を継承
+defaults:
+  - base
+
+# モデル設定
+model:
+  name: "text_to_latent"
+
+  # 基本パラメータ
+  latent_dim: 24
+  chunk_compress_factor: 6  # 86 Hz → 14.3 Hz
+
+  # Batch Expander (Context-Sharing)
+  batch_expander:
+    n_batch_expand: 6  # Ke = 6 (論文ではKe=4だが、tts.jsonでは6)
+
+  # Normalizer
+  normalizer:
+    scale: 0.25
+
+  # Text Encoder
+  text_encoder:
+    char_dict_path: "resources/metadata/char_dict/ja/char_dict.json"
+
+    # Text Embedder
+    text_embedder:
+      char_dict_path: "resources/metadata/char_dict/ja/char_dict.json"
+      char_emb_dim: 256
+
+    # ConvNeXt
+    convnext:
+      idim: 256
+      ksz: 5
+      intermediate_dim: 1024
+      num_layers: 6
+      dilation_lst: [1, 1, 1, 1, 1, 1]
+
+    # Attention Encoder
+    attn_encoder:
+      hidden_channels: 256
+      filter_channels: 1024
+      n_heads: 4
+      n_layers: 4
+      p_dropout: 0.0
+
+    # Projection Out
+    proj_out:
+      idim: 256
+      odim: 256
+
+  # Flow Matching
+  flow_matching:
+    sig_min: 0  # ノイズの最小標準偏差
+
+  # Style Encoder
+  style_encoder:
+    # Projection In
+    proj_in:
+      ldim: 24
+      chunk_compress_factor: 6
+      odim: 256
+
+    # ConvNeXt
+    convnext:
+      idim: 256
+      ksz: 5
+      intermediate_dim: 1024
+      num_layers: 6
+      dilation_lst: [1, 1, 1, 1, 1, 1]
+
+    # Style Token Layer
+    style_token_layer:
+      input_dim: 256
+      n_style: 50  # スタイルトークン数
+      style_key_dim: 256
+      style_value_dim: 256
+      prototype_dim: 256
+      n_units: 256
+      n_heads: 2
+
+  # Speech-Prompted Text Encoder
+  speech_prompted_text_encoder:
+    text_dim: 256
+    style_dim: 256
+    n_units: 256
+    n_heads: 2
+
+  # Unconditional Masker (CFG用)
+  uncond_masker:
+    prob_both_uncond: 0.04  # テキスト+スタイル両方をマスク
+    prob_text_uncond: 0.01  # テキストのみマスク
+    std: 0.1
+    text_dim: 256
+    n_style: 50
+    style_key_dim: 256
+    style_value_dim: 256
+
+  # Vector Field (Vector Estimator)
+  vector_field:
+    # Projection In (時間圧縮)
+    proj_in:
+      ldim: 24
+      chunk_compress_factor: 6
+      odim: 512
+
+    # Time Encoder
+    time_encoder:
+      time_dim: 64
+      hdim: 256
+
+    # Main Blocks
+    main_blocks:
+      n_blocks: 4
+
+      # Time Conditioning Layer
+      time_cond_layer:
+        idim: 512
+        time_dim: 64
+
+      # Style Conditioning Layer
+      style_cond_layer:
+        idim: 512
+        style_dim: 256
+
+      # Text Conditioning Layer (with LARoPE)
+      text_cond_layer:
+        idim: 512
+        text_dim: 256
+        n_heads: 4
+        use_residual: true
+        rotary_base: 10000  # LARoPE設定
+        rotary_scale: 10    # LARoPE設定
+
+      # ConvNeXt Blocks
+      convnext_0:
+        idim: 512
+        ksz: 5
+        intermediate_dim: 1024
+        num_layers: 4
+        dilation_lst: [1, 2, 4, 8]
+
+      convnext_1:
+        idim: 512
+        ksz: 5
+        intermediate_dim: 1024
+        num_layers: 1
+        dilation_lst: [1]
+
+      convnext_2:
+        idim: 512
+        ksz: 5
+        intermediate_dim: 1024
+        num_layers: 1
+        dilation_lst: [1]
+
+    # Last ConvNeXt
+    last_convnext:
+      idim: 512
+      ksz: 5
+      intermediate_dim: 1024
+      num_layers: 4
+      dilation_lst: [1, 1, 1, 1]
+
+    # Projection Out
+    proj_out:
+      idim: 512
+      chunk_compress_factor: 6
+      ldim: 24
+
+# 損失関数設定
+loss:
+  # Flow Matching Loss (MSE)
+  flow_matching_weight: 1.0
+
+  # Style Regularization
+  style_reg_weight: 0.01
+
+# 学習設定
+training:
+  # 最適化
+  optimizer:
+    type: "AdamW"
+    lr: 1.0e-4
+    betas: [0.9, 0.999]
+    eps: 1.0e-8
+    weight_decay: 0.01
+
+  # スケジューラー
+  scheduler:
+    type: "CosineAnnealingLR"
+    T_max: 700000
+    eta_min: 1.0e-6
+
+  # 学習ステップ
+  total_steps: 700000  # 700k steps
+  warmup_steps: 5000
+
+  # バッチサイズ (with Batch Expansion)
+  batch_size: 64
+  effective_batch_size: 384  # 64 * 6 (Ke)
+  gradient_accumulation_steps: 1
+
+  # EMA (Exponential Moving Average)
+  use_ema: true
+  ema_decay: 0.9999
+
+# 推論設定
+inference:
+  # Flow Matching推論
+  total_step: 32  # NFE (Number of Function Evaluations)
+  speed: 1.05     # 速度調整
+
+  # CFG (Classifier-Free Guidance)
+  cfg_scale: 3.0  # ガイダンススケール

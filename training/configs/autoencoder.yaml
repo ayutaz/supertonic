@@ -1,0 +1,113 @@
+# SupertonicTTS - Speech Autoencoder設定
+# 論文・tts.jsonから抽出した正確なハイパーパラメータ
+
+# 基本設定を継承
+defaults:
+  - base
+
+# モデル設定
+model:
+  name: "speech_autoencoder"
+
+  # 基本パラメータ
+  sample_rate: 44100
+  n_delay: 0
+  base_chunk_size: 512
+  chunk_compress_factor: 1
+  ldim: 24  # 潜在次元
+
+  # エンコーダー設定
+  encoder:
+    # Mel-Spectrogram処理
+    spec_processor:
+      n_fft: 2048
+      win_length: 2048
+      hop_length: 512
+      n_mels: 228
+      sample_rate: 44100
+      eps: 1.0e-05
+      norm_mean: 0.0
+      norm_std: 1.0
+
+    # ConvNeXt設定
+    ksz_init: 7
+    ksz: 7
+    num_layers: 10
+    dilation_lst: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    intermediate_dim: 2048
+    idim: 1253  # 228 (mel) + 228*2 (delta, delta-delta) + 228*2 (前後フレーム) + ... = 1253
+    hdim: 512
+    odim: 24
+
+  # デコーダー設定
+  decoder:
+    ksz_init: 7
+    ksz: 7
+    num_layers: 10
+    dilation_lst: [1, 2, 4, 1, 2, 4, 1, 1, 1, 1]
+    intermediate_dim: 2048
+    idim: 24
+    hdim: 512
+
+    # デコーダーヘッド
+    head:
+      idim: 512
+      hdim: 2048
+      odim: 512
+      ksz: 3
+
+# 損失関数設定
+loss:
+  # Multi-Scale STFT Loss
+  stft_scales: [2048, 1024, 512, 256, 128]
+  stft_loss_weight: 1.0
+
+  # Mel-Spectrogram Loss
+  mel_loss_weight: 45.0
+
+  # Feature Matching Loss (GAN Discriminator)
+  feature_matching_weight: 2.0
+
+  # Adversarial Loss
+  adversarial_loss_weight: 1.0
+  discriminator_loss_weight: 1.0
+
+# 学習設定
+training:
+  # 最適化
+  optimizer:
+    type: "AdamW"
+    lr: 2.0e-4
+    betas: [0.8, 0.99]
+    eps: 1.0e-9
+    weight_decay: 0.01
+
+  # スケジューラー
+  scheduler:
+    type: "ExponentialLR"
+    gamma: 0.999875  # 40k stepsで1/10になる設定
+
+  # 学習ステップ
+  total_steps: 1500000  # 1.5M steps
+  warmup_steps: 10000
+
+  # バッチサイズ
+  batch_size: 64
+  gradient_accumulation_steps: 1
+
+  # Discriminator学習開始
+  discriminator_start_step: 10000
+
+# データ拡張
+augmentation:
+  time_stretch:
+    enabled: true
+    min_rate: 0.9
+    max_rate: 1.1
+  pitch_shift:
+    enabled: true
+    min_semitones: -2
+    max_semitones: 2
+  noise_injection:
+    enabled: true
+    noise_level: 0.005
