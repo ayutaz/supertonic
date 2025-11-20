@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:arxiv.org)",
+      "Bash(curl:*)",
+      "Bash(git lfs:*)",
+      "Bash(if [ -d \"assets\" ])",
+      "Bash(then echo \"assets directory already exists\")",
+      "Bash(else git clone https://huggingface.co/Supertone/supertonic assets)",
+      "Bash(fi)",
+      "Bash(git restore --source=HEAD :/)",
+      "Bash(git remote set-url:*)",
+      "Bash(git checkout:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(find:*)",
+      "Bash(cat:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
