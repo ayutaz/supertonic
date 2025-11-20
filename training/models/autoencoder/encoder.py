@@ -10,7 +10,7 @@ import torch.nn.functional as F
 from typing import Optional, Tuple
 
 from ..common import ConvNeXtStack, InitialConvNeXt
-from ...data.preprocessing import MelSpectrogramExtractor
+from data.preprocessing import MelSpectrogramExtractor
 
 
 class MelSpectrogramProcessor(nn.Module):

@@ -3,7 +3,7 @@ Common modules shared across all models
 """
 
 from .attention import MultiHeadAttention, LARoPE
-from .convnext import ConvNeXtBlock, ConvNeXtStack
+from .convnext import ConvNeXtBlock, ConvNeXtStack, InitialConvNeXt
 from .layers import (
     CausalConv1d,
     FiLM,
@@ -24,6 +24,7 @@ __all__ = [
     # ConvNeXt
     "ConvNeXtBlock",
     "ConvNeXtStack",
+    "InitialConvNeXt",
     # Layers
     "CausalConv1d",
     "FiLM",
